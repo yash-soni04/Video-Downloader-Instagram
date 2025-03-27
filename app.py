@@ -1,29 +1,54 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, send_from_directory
 import instaloader
 import os
 
 app = Flask(__name__)
 
+# Configure paths for Render
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
+
+# Ensure download folder exists
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
 loader = instaloader.Instaloader(
+    dirname_pattern=DOWNLOAD_FOLDER,
     download_pictures=False,
-    download_geotags=False,
-    download_comments=False,
+    download_videos=True,
     download_video_thumbnails=False,
-    save_metadata=False,
+    save_metadata=False
 )
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         url = request.form.get("url")
-        shortcode = url.split("/")[-2]
+        if not url or "instagram.com" not in url:
+            return "Please enter a valid Instagram URL"
+        
         try:
+            shortcode = url.split("/")[-2]
+            # Login with your Instagram credentials (required for reliability)
+            loader.login("YOUR_IG_USERNAME", "YOUR_IG_PASSWORD")
+            
             post = instaloader.Post.from_shortcode(loader.context, shortcode)
-            loader.download_post(post, target="downloads")
-            return f'<a href="/downloads/{shortcode}.mp4" download>Click here to download</a>'
+            loader.download_post(post, target=os.path.join(DOWNLOAD_FOLDER, shortcode))
+            
+            video_path = os.path.join(DOWNLOAD_FOLDER, shortcode, f"{shortcode}.mp4")
+            if os.path.exists(video_path):
+                return f'<a href="/download/{shortcode}">Download Video</a>'
+            return "Video not found - may be a private account or not a video post"
         except Exception as e:
-            return f"Error: {e}"
+            return f"Error: {str(e)}"
     return render_template("index.html")
 
+@app.route("/download/<shortcode>")
+def download_file(shortcode):
+    return send_from_directory(
+        os.path.join(DOWNLOAD_FOLDER, shortcode),
+        f"{shortcode}.mp4",
+        as_attachment=True
+    )
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
