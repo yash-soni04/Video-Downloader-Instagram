@@ -17,7 +17,7 @@ HEADERS = {
 }
 
 def extract_video_url(html_content):
-    """Improved video URL extraction for current Instagram layout"""
+    #Improved video URL extraction for current Instagram layout#
     try:
         # Method 1: Find JSON data in script tag
         script_data = re.search(r'<script type="application/ld\+json">(.*?)</script>', html_content, re.DOTALL)
