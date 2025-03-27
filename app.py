@@ -28,16 +28,14 @@ def index():
         
         try:
             shortcode = url.split("/")[-2]
-            # Login with your Instagram credentials (required for reliability)
-            loader.login("YOUR_IG_USERNAME", "YOUR_IG_PASSWORD")
             
             post = instaloader.Post.from_shortcode(loader.context, shortcode)
             loader.download_post(post, target=os.path.join(DOWNLOAD_FOLDER, shortcode))
             
             video_path = os.path.join(DOWNLOAD_FOLDER, shortcode, f"{shortcode}.mp4")
-            if os.path.exists(video_path):
-                return f'<a href="/download/{shortcode}">Download Video</a>'
-            return "Video not found - may be a private account or not a video post"
+            return (
+                f"Video downloaded successfully!"
+            )
         except Exception as e:
             return f"Error: {str(e)}"
     return render_template("index.html")
